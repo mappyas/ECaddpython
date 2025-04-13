@@ -10,15 +10,15 @@ from .serializers import ProductSerializer, CategorySerializer
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all() # 全てのカテゴリーを取得
-    serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CategorySerializer # カテゴリーのシリアライザーを使用
+    permission_classes = [permissions.IsAuthenticated] # 認証されたユーザーのみがアクセスできる
 
-    @action(detail=True, methods=['get'])
-    def products(self, request, pk=None):
-        category = self.get_object()
-        products = category.products.all()
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
+    @action(detail=True, methods=['get']) # 詳細なデータを取得するためのアクション　detail=TrueはカテゴリーのIDを取得するためのアクション
+    def products(self, request, pk=None): # カテゴリーのIDを取得
+        category = self.get_object() # カテゴリーのオブジェクトを取得   
+        products = category.products.all() # カテゴリーに紐づく商品を取得
+        serializer = ProductSerializer(products, many=True) # 商品のシリアライザーを使用
+        return Response(serializer.data) # 商品のデータを返す
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
