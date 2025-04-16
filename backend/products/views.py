@@ -3,8 +3,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Product, Category, Cart, CartItem
-from .serializers import ProductSerializer, CategorySerializer, CartSerializer, CartItemSerializer
+from .models import Product, Category
+from .serializers import ProductSerializer, CategorySerializer
 
 # Create your views here.
 
@@ -41,76 +41,3 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(price__lte=max_price)
 
         return queryset
-
-class CartViewSet(viewsets.ModelViewSet):
-    serializer_class = CartSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
-
-    def get_object(self):
-        cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        return cart
-
-    @action(detail=True, methods=['post'])
-    def add_item(self, request, pk=None):
-        cart = self.get_object()
-        product_id = request.data.get('product_id')
-        quantity = request.data.get('quantity', 1)
-
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return Response({'error': '商品が見つかりません'}, status=status.HTTP_404_NOT_FOUND)
-
-        if product.stock < quantity:
-            return Response({'error': '在庫が不足しています'}, status=status.HTTP_400_BAD_REQUEST)
-
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            product=product,
-            defaults={'quantity': quantity}
-        )
-
-        if not created:
-            cart_item.quantity += quantity
-            cart_item.save()
-
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def remove_item(self, request, pk=None):
-        cart = self.get_object()
-        product_id = request.data.get('product_id')
-
-        try:
-            cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
-            cart_item.delete()
-        except CartItem.DoesNotExist:
-            return Response({'error': 'カートに商品がありません'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def update_quantity(self, request, pk=None):
-        cart = self.get_object()
-        product_id = request.data.get('product_id')
-        quantity = request.data.get('quantity')
-
-        try:
-            cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
-            product = cart_item.product
-
-            if product.stock < quantity:
-                return Response({'error': '在庫が不足しています'}, status=status.HTTP_400_BAD_REQUEST)
-
-            cart_item.quantity = quantity
-            cart_item.save()
-        except CartItem.DoesNotExist:
-            return Response({'error': 'カートに商品がありません'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
