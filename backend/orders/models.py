@@ -11,7 +11,7 @@ class Order(models.Model):
         ('delivered', '配達済み'),
         ('cancelled', 'キャンセル済み'),
     ]
-    # ユーザーとの関連付け
+    # ユーザーとの関連付け、djangoのユーザーモデルを使用
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,  
         on_delete=models.CASCADE, 
@@ -67,3 +67,52 @@ class OrderItem(models.Model):
     def get_subtotal(self):
         """小計を計算"""
         return self.price * self.quantity
+
+class Payment(models.Model):
+    PAYMENT_METHODS = [
+        ('card', 'クレジットカード'),
+        ('konbini', 'コンビニ決済'),
+        ('bank_transfer', '銀行振込'),
+        ('google_pay', 'Google Pay'),
+        ('apple_pay', 'Apple Pay'),
+        ('paypay', 'PayPay')
+    ]
+    
+    PAYMENT_STATUS = [
+        ('pending', '支払い待ち'),
+        ('processing', '処理中'),
+        ('completed', '支払い完了'),
+        ('failed', '支払い失敗'),
+        ('cancelled', 'キャンセル済'),
+        ('refunded', '返金済み')
+    ]
+
+    order = models.OneToOneField(
+        'Order', 
+        on_delete=models.CASCADE,
+        related_name='payment'
+    )
+    amount = models.IntegerField('支払い金額')
+    payment_method = models.CharField(
+        '支払い方法',
+        max_length=20,
+        choices=PAYMENT_METHODS
+    )
+    status = models.CharField(
+        '支払い状態',
+        max_length=20,
+        choices=PAYMENT_STATUS,
+        default='pending'
+    )
+    stripe_payment_intent_id = models.CharField(
+        'Stripe Payment Intent ID',
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    created_at = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
+
+    class Meta:
+        verbose_name = '支払い情報'
+        verbose_name_plural = '支払い情報'

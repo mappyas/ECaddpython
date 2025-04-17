@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Payment
 from products.serializers import ProductSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -66,4 +66,18 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         # カートを空にする
         cart.items.all().delete()
 
-        return order 
+        return order
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'order', 'amount', 'payment_method',
+            'status', 'created_at'
+        ]
+        read_only_fields = ['status', 'created_at']
+
+class CreatePaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['payment_method'] 
